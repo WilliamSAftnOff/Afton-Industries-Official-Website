@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Afton Industries | Industrial Mechatronics Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --plasma-violet: #8a2be2;
+            --electric-orchid: #bf00ff;
+            --void-indigo: #0a011f;
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #050507;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        /* CRT & Scanline Texture */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Chromatic Aberration Effect */
+        .chromatic {
+            text-shadow: 2px 0 1px rgba(255,0,80,0.5), -2px 0 1px rgba(0,255,235,0.5);
+        }
+
+        /* Spring-Lock Jerky Motion */
+        @keyframes hydraulic-expand {
+            0% { width: 0%; }
+            20% { width: 20%; }
+            25% { width: 18%; }
+            45% { width: 45%; }
+            50% { width: 42%; }
+            80% { width: 85%; }
+            100% { width: 100%; }
+        }
+        .animate-hydraulic {
+            animation: hydraulic-expand 2s steps(10) forwards;
+        }
+
+        @keyframes jitter {
+            0% { transform: translate(0); }
+            10% { transform: translate(-1px, 1px); }
+            20% { transform: translate(1px, -1px); }
+            30% { transform: translate(-1px, -1px); }
+            40% { transform: translate(1px, 1px); }
+            50% { transform: translate(-1px, 1px); }
+            100% { transform: translate(0); }
+        }
+        .animate-jitter {
+            animation: jitter 0.2s infinite linear;
+        }
+
+        .plasma-glow {
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.4);
+            animation: plasma-pulse 4s infinite ease-in-out;
+        }
+        @keyframes plasma-pulse {
+            0%, 100% { opacity: 0.8; box-shadow: 0 0 15px rgba(138, 43, 226, 0.3); }
+            50% { opacity: 1; box-shadow: 0 0 30px rgba(138, 43, 226, 0.6); }
+        }
+        .smoked-glass {
+            background: rgba(12, 12, 14, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(157, 143, 191, 0.1);
+        }
+        .corner-bracket {
+            position: relative;
+        }
+        .corner-bracket::before {
+            content: "";
+            position: absolute;
+            top: -2px; left: -2px; width: 20px; height: 20px;
+            border-top: 2px solid var(--plasma-violet);
+            border-left: 2px solid var(--plasma-violet);
+        }
+        .corner-bracket::after {
+            content: "";
+            position: absolute;
+            bottom: -2px; right: -2px; width: 20px; height: 20px;
+            border-bottom: 2px solid var(--plasma-violet);
+            border-right: 2px solid var(--plasma-violet);
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0"
+  }
+}
+</script>
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div id="root"></div>
+</body>
+</html>

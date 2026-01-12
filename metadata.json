@@ -1,0 +1,8 @@
+{
+  "name": "Afton Industries Official",
+  "description": "A high-security, retro-futuristic corporate portal for Afton Industries, showcasing advanced robotics and Mimic1 AI integration.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
