@@ -14,17 +14,17 @@ const About: React.FC = () => {
           <div className="smoked-glass p-12 md:p-16 corner-bracket border border-slate-800/50">
             <h3 className="text-2xl font-bold text-white mb-8 uppercase tracking-tight flex items-center">
               <span className="w-8 h-px bg-[#8a2be2] mr-4"></span>
-              Applied Excellence
+              The Afton Legacy
             </h3>
             <div className="space-y-8 text-slate-400 text-lg md:text-xl leading-relaxed font-light">
               <p>
-                Afton Industries is founded on the principle of <span className="text-white font-medium italic">Practical Mechatronics</span>. Our roadmap focuses on high-precision mechanical engineering and scalable automation solutions.
+                Afton Industries was founded by an aspiring robotics entrepreneur and inventor <span className="text-white font-medium italic">Mr. William Santillan Afton</span>. Afton Industries is the home for Afton's journey in robotics, It is where Mr. Afton document his progress as a mechatronics student and inventor, moving from simple circuits to complex machines.
               </p>
               <p>
-                We are dedicated to bridging the gap between distributed software command layers and low-level physical actuation, ensuring reliable, iterative performance for all mechatronic builds.
+                We are focused on the challenge of making software and hardware work together—basically, writing the code that brings mechanical builds to life.
               </p>
               <p>
-                Every project in our portfolio is a testament to the convergence of hardware durability and logical precision, developed through rigorous prototyping and field testing.
+                Every project in our portfolio showcases all of the robotic and AI projects made by our visionary founder and is a testament to his engineering and innovation skills developed through rigorous prototyping and field testing.
               </p>
             </div>
           </div>
