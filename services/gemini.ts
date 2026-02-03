@@ -38,9 +38,16 @@ If this is the very first message after the code, respond with something chillin
 
 // Helper to get Gemini response for the chat terminal
 export const getMimicResponse = async (history: Message[], forceCreatorMode: boolean = false) => {
+  // Always use process.env.API_KEY directly as per GenAI guidelines
+  const apiKey = process.env.API_KEY;
+  
+  if (!apiKey || apiKey === 'undefined' || apiKey === '') {
+    console.error("MIMIC1_DEBUG: process.env.API_KEY is missing. Ensure the environment variable is set.");
+    return "The system is currently experiencing a connection delay. [SYSTEM_ERROR: SECURE_UPLINK_OFFLINE]";
+  }
+
   try {
-    // Initializing Gemini instance right before the call to ensure fresh configuration
-    // The API key is obtained exclusively from the environment variable process.env.API_KEY
+    // Initializing Gemini instance right before the call using the mandated pattern
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     // Check if the creator code exists anywhere in the user's history OR if forced by UI state
@@ -52,10 +59,18 @@ export const getMimicResponse = async (history: Message[], forceCreatorMode: boo
     // The mode is active if forced by the App state OR found in history
     const isCreatorMode = forceCreatorMode || historyHasCode;
 
-    const contents = history.map(msg => ({
+    // Convert history to Gemini parts
+    let contents = history.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }]
     }));
+
+    // Multi-turn conversations in Gemini must start with a 'user' role.
+    // We filter out any leading 'model' messages (like the initial welcome message) 
+    // to ensure valid request structure for generateContent.
+    if (contents.length > 0 && contents[0].role === 'model') {
+      contents = contents.slice(1);
+    }
 
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
@@ -67,17 +82,18 @@ export const getMimicResponse = async (history: Message[], forceCreatorMode: boo
       },
     });
 
-    // Directly access the .text property from GenerateContentResponse as per guidelines
+    // Directly access the .text property from GenerateContentResponse
     return response.text || "Communication error. Output buffer empty.";
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "The system is currently experiencing a connection delay. Please refresh the page.";
+    return "The system is currently experiencing a connection delay. Please check network logs or refresh the page.";
   }
 };
 
 // Generates a professional dossier for a specific project
 export const generateTechnicalDossier = async (projectName: string) => {
   try {
+    // Always use process.env.API_KEY directly
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `Provide a brief professional overview of the project: ${projectName}.`;
 
@@ -92,7 +108,6 @@ export const generateTechnicalDossier = async (projectName: string) => {
 
     return response.text;
   } catch (error) {
-    console.error("Dossier Generation Error:", error);
     return "Overview currently unavailable.";
   }
 };
@@ -100,6 +115,7 @@ export const generateTechnicalDossier = async (projectName: string) => {
 // Generates a simplified overview for a technology item
 export const generateTechOverview = async (techName: string) => {
   try {
+    // Always use process.env.API_KEY directly
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `Explain what ${techName} is and how it is used in robotics in very simple, beginner-friendly terms.
     Keep it short, clear, and easy to understand for a non-expert.
