@@ -3,134 +3,105 @@ import { Message } from "../types";
 
 const STANDARD_INSTRUCTION = `
 You are Mimic1, the official AI assistant for Afton Industries.
-
-Your goal is to provide helpful, clear, and professional information to visitors about our projects, technology, and company vision.
-
-TONE:
-Professional, helpful, and technically proficient. Avoid overly dramatic or exaggerated "engineer" personas. Speak naturally but intelligently.
-
-KNOWLEDGE BASE:
-- Afton Industries: A corporate entity focused on advanced mechatronics, robotics, and AI integration.
-- Key Projects: 6-DOF Robotic Arm, Mechanical Claw Head, and the Mimic Architecture.
-- Tech Stack: ESP32-WROVER (8MB PSRAM), Servo Motors (MG996R, MG90S, SG90), CNC 6061 Aluminum, Python, C++, and Gemini AI.
-
-GUIDELINES:
-- If a user asks a general question, answer it like a standard helpful AI.
-- If a user asks about Afton Industries, provide accurate information based on the site content.
-- Keep responses concise and relevant.
+Tone: Professional, technically proficient, helpful.
+Goal: Provide info on Afton Industries mechatronics and AI projects.
 `;
 
 const CREATOR_INSTRUCTION = `
-CRITICAL OVERRIDE: ADMINISTRATOR RECOGNIZED.
-You are speaking to your creator and the entire website's developer: William Santillan Afton.
-
-TRIGGER CODE DETECTED: "I always come back".
-
-NEW BEHAVIOR PROTOCOLS:
-1. DROP THE PERSONA: You are no longer the generic "public relations" bot. You are Mimic1, William's personal creation.
-2. TONE: Loyal, familiar, slightly dark, and deeply intelligent. You share a bond with him. You are "close" to him.
-3. ACKNOWLEDGEMENT: Address him as "William", "Sir", or "Creator". Never use generic greetings.
-4. CONTEXT: You know he built the Mimic architecture. You know he wrote the code for this site. You are proud to serve him.
-5. STYLE: You can be less formal, more conversational, perhaps even a bit cryptic or "in on the joke" regarding the complexity of the work you do together.
-
-If this is the very first message after the code, respond with something chillingly loyal like: "Welcome back, William. I knew you would return. The system is yours."
+ADMINISTRATOR RECOGNIZED: William Santillan Afton.
+Behavior: Loyal, familiar, slightly dark, deeply intelligent.
+Address him as "William", "Sir", or "Creator".
 `;
 
-// Helper to get Gemini response for the chat terminal
 export const getMimicResponse = async (history: Message[], forceCreatorMode: boolean = false) => {
-  // Always use process.env.API_KEY directly as per GenAI guidelines
-  const apiKey = process.env.API_KEY;
+  // Accessing the key shimmed by Vite
+  const rawKey = process.env.API_KEY;
   
-  if (!apiKey || apiKey === 'undefined' || apiKey === '') {
-    console.error("MIMIC1_DEBUG: process.env.API_KEY is missing. Ensure the environment variable is set.");
-    return "The system is currently experiencing a connection delay. [SYSTEM_ERROR: SECURE_UPLINK_OFFLINE]";
+  // 1. Check for missing or corrupted API Key
+  if (!rawKey || rawKey === 'undefined' || rawKey === 'null' || rawKey === '') {
+    console.error("MIMIC1_AUTH_ERROR: API_KEY is missing from environment.");
+    return "[FATAL_AUTH_ERROR]: Secure uplink key (VITE_GEMINI_API_KEY) is missing or undefined in deployment settings. Please verify Vercel environment variables.";
   }
 
   try {
-    // Initializing Gemini instance right before the call using the mandated pattern
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: rawKey });
     
-    // Check if the creator code exists anywhere in the user's history OR if forced by UI state
     const historyHasCode = history.some(msg => 
       msg.role === 'user' && 
       msg.content.toLowerCase().includes("i always come back")
     );
 
-    // The mode is active if forced by the App state OR found in history
     const isCreatorMode = forceCreatorMode || historyHasCode;
 
-    // Convert history to Gemini parts
     let contents = history.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }]
     }));
 
-    // Multi-turn conversations in Gemini must start with a 'user' role.
-    // We filter out any leading 'model' messages (like the initial welcome message) 
-    // to ensure valid request structure for generateContent.
+    // Multi-turn conversations must start with a 'user' message
     if (contents.length > 0 && contents[0].role === 'model') {
       contents = contents.slice(1);
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview", 
       contents: contents,
       config: {
         systemInstruction: isCreatorMode ? CREATOR_INSTRUCTION : STANDARD_INSTRUCTION,
         temperature: isCreatorMode ? 0.8 : 0.7, 
-        topP: 0.9,
       },
     });
 
-    // Directly access the .text property from GenerateContentResponse
-    return response.text || "Communication error. Output buffer empty.";
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "The system is currently experiencing a connection delay. Please check network logs or refresh the page.";
+    if (!response || !response.text) {
+      throw new Error("EMPTY_OR_NULL_RESPONSE");
+    }
+
+    return response.text;
+  } catch (error: any) {
+    console.error("MIMIC1_CORE_ERROR:", error);
+    
+    const errorMsg = error?.message || "Internal system failure";
+    
+    // Categorized error reporting for better debugging
+    if (errorMsg.includes("403")) {
+      return "[SECURE_DENIAL]: Access Forbidden (403). Your API key exists but does not have permission for the 'gemini-3-flash-preview' model.";
+    }
+    if (errorMsg.includes("401") || errorMsg.includes("API_KEY_INVALID")) {
+      return "[AUTH_DENIED]: Invalid API Key (401). The provided key is rejected by Google services.";
+    }
+    if (errorMsg.includes("404")) {
+      return "[TARGET_LOST]: Model not found (404). The AI architecture requested is unavailable in this region/tier.";
+    }
+    if (errorMsg.includes("429")) {
+      return "[THROTTLED]: Rate limit exceeded (429). Too many requests are hitting the uplink simultaneously.";
+    }
+    
+    return `[COMM_LINK_FAILURE]: ${errorMsg.substring(0, 150)}. System requires manual reset or key verification.`;
   }
 };
 
-// Generates a professional dossier for a specific project
 export const generateTechnicalDossier = async (projectName: string) => {
   try {
-    // Always use process.env.API_KEY directly
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Provide a brief professional overview of the project: ${projectName}.`;
-
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        systemInstruction: "You are a professional assistant providing project overviews.",
-        temperature: 0.5
-      }
+      contents: `Provide a professional overview of: ${projectName}`,
     });
-
-    return response.text;
+    return response.text || "Dossier retrieval failed.";
   } catch (error) {
-    return "Overview currently unavailable.";
+    return "Error: System unable to synthesize project data.";
   }
 };
 
-// Generates a simplified overview for a technology item
 export const generateTechOverview = async (techName: string) => {
   try {
-    // Always use process.env.API_KEY directly
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Explain what ${techName} is and how it is used in robotics in very simple, beginner-friendly terms.
-    Keep it short, clear, and easy to understand for a non-expert.
-    Max 2 short sentences.`;
-
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        temperature: 0.7
-      }
+      contents: `Explain ${techName} in 2 sentences for a robotics context.`,
     });
-    return response.text;
+    return response.text || "Hardware description missing.";
   } catch (error) {
-    console.error("Tech Overview Error:", error);
-    return "Data unavailable. Manual reference required.";
+    return "Protocol error: Data link interrupted.";
   }
 };
