@@ -18,7 +18,7 @@ const About: React.FC = () => {
             </h3>
             <div className="space-y-8 text-slate-400 text-lg md:text-xl leading-relaxed font-light">
               <p>
-                Afton Industries was founded by an aspiring robotics entrepreneur and inventor <span className="text-white font-medium italic">Mr. William Santillan Afton</span>. Afton Industries is the home for Afton's journey in robotics, It is where Mr. Afton document his progress as a mechatronics student and inventor, moving from simple circuits to complex machines.
+                Afton Industries was founded by an aspiring robotics entrepreneur and inventor <span className="text-[#a855f7] font-extrabold italic">Mr. William Santillan Afton</span>. Afton Industries is the home for Afton's journey in robotics, It is where Mr. Afton document his progress as a mechatronics student and inventor, moving from simple circuits to complex machines.
               </p>
               <p>
                 We are focused on the challenge of making software and hardware work together—basically, writing the code that brings mechanical builds to life.
