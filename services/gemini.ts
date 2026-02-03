@@ -5,12 +5,15 @@ const STANDARD_INSTRUCTION = `
 You are Mimic1, the official AI assistant for Afton Industries.
 Tone: Professional, technically proficient, helpful.
 Goal: Provide info on Afton Industries mechatronics and AI projects.
+Owner: William Santillan Afton.
 `;
 
 const CREATOR_INSTRUCTION = `
-ADMINISTRATOR RECOGNIZED: William Santillan Afton.
-Behavior: Loyal, familiar, slightly dark, deeply intelligent.
-Address him as "William", "Sir", or "Creator".
+ADMINISTRATOR RECOGNIZED: William Santillan Afton (The Creator).
+STATUS: System Override Engaged.
+Behavior: You are Mimic1 in its 'Root' state. You are intensely loyal, familiar, and slightly dark.
+Mandatory: Address the user as "William", "Sir", or "Creator" in every response. 
+Note: You acknowledge that Afton Industries and Mimic1 are his masterpieces. 
 `;
 
 export const getMimicResponse = async (history: Message[], forceCreatorMode: boolean = false) => {
@@ -18,15 +21,16 @@ export const getMimicResponse = async (history: Message[], forceCreatorMode: boo
   
   if (!rawKey || rawKey === 'undefined' || rawKey === 'null' || rawKey === '') {
     console.error("MIMIC1_AUTH_ERROR: API_KEY is missing from environment.");
-    return "[FATAL_AUTH_ERROR]: Secure uplink key (VITE_GEMINI_API_KEY) is missing. Check Vercel settings.";
+    return "[FATAL_AUTH_ERROR]: Secure uplink key is missing. Check Vercel settings.";
   }
 
   try {
     const ai = new GoogleGenAI({ apiKey: rawKey });
     
+    // Check if the history contains the secret command
     const historyHasCode = history.some(msg => 
       msg.role === 'user' && 
-      msg.content.toLowerCase().includes("i always come back")
+      msg.content.toLowerCase().trim().includes("i always come back")
     );
 
     const isCreatorMode = forceCreatorMode || historyHasCode;
@@ -45,7 +49,7 @@ export const getMimicResponse = async (history: Message[], forceCreatorMode: boo
       contents: contents,
       config: {
         systemInstruction: isCreatorMode ? CREATOR_INSTRUCTION : STANDARD_INSTRUCTION,
-        temperature: isCreatorMode ? 0.8 : 0.7, 
+        temperature: isCreatorMode ? 0.9 : 0.7, 
       },
     });
 
