@@ -13,4 +13,4 @@ jobs:
         uses: vercel/repository-dispatch@v1
         with:
           token: ${{ secrets.VERCEL_TOKEN }}
-          name: 'Vercel - afton-industries-official-website: lint'
+          name: 'lint'
