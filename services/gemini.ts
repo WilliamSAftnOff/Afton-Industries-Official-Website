@@ -36,8 +36,10 @@ NEW BEHAVIOR PROTOCOLS:
 If this is the very first message after the code, respond with something chillingly loyal like: "Welcome back, William. I knew you would return. The system is yours."
 `;
 
+// Helper to get Gemini response for the chat terminal
 export const getMimicResponse = async (history: Message[], forceCreatorMode: boolean = false) => {
   try {
+    // Initializing Gemini instance right before the call
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     // Check if the creator code exists anywhere in the user's history OR if forced by UI state
@@ -64,6 +66,7 @@ export const getMimicResponse = async (history: Message[], forceCreatorMode: boo
       },
     });
 
+    // Directly access the .text property as per guidelines
     return response.text || "Communication error. Please try again.";
   } catch (error) {
     console.error("Gemini API Error:", error);
@@ -71,6 +74,7 @@ export const getMimicResponse = async (history: Message[], forceCreatorMode: boo
   }
 };
 
+// Generates a professional dossier for a specific project
 export const generateTechnicalDossier = async (projectName: string) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -91,6 +95,7 @@ export const generateTechnicalDossier = async (projectName: string) => {
   }
 };
 
+// Generates a simplified overview for a technology item
 export const generateTechOverview = async (techName: string) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
