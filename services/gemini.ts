@@ -14,13 +14,11 @@ Address him as "William", "Sir", or "Creator".
 `;
 
 export const getMimicResponse = async (history: Message[], forceCreatorMode: boolean = false) => {
-  // Accessing the key shimmed by Vite
   const rawKey = process.env.API_KEY;
   
-  // 1. Check for missing or corrupted API Key
   if (!rawKey || rawKey === 'undefined' || rawKey === 'null' || rawKey === '') {
     console.error("MIMIC1_AUTH_ERROR: API_KEY is missing from environment.");
-    return "[FATAL_AUTH_ERROR]: Secure uplink key (VITE_GEMINI_API_KEY) is missing or undefined in deployment settings. Please verify Vercel environment variables.";
+    return "[FATAL_AUTH_ERROR]: Secure uplink key (VITE_GEMINI_API_KEY) is missing. Check Vercel settings.";
   }
 
   try {
@@ -38,7 +36,6 @@ export const getMimicResponse = async (history: Message[], forceCreatorMode: boo
       parts: [{ text: msg.content }]
     }));
 
-    // Multi-turn conversations must start with a 'user' message
     if (contents.length > 0 && contents[0].role === 'model') {
       contents = contents.slice(1);
     }
@@ -59,24 +56,13 @@ export const getMimicResponse = async (history: Message[], forceCreatorMode: boo
     return response.text;
   } catch (error: any) {
     console.error("MIMIC1_CORE_ERROR:", error);
+    const errorMsg = error?.message || "Internal failure";
     
-    const errorMsg = error?.message || "Internal system failure";
+    if (errorMsg.includes("403")) return "[SECURE_DENIAL]: Forbidden. Check API permissions.";
+    if (errorMsg.includes("401")) return "[AUTH_DENIED]: Invalid API Key.";
+    if (errorMsg.includes("429")) return "[THROTTLED]: Rate limit exceeded.";
     
-    // Categorized error reporting for better debugging
-    if (errorMsg.includes("403")) {
-      return "[SECURE_DENIAL]: Access Forbidden (403). Your API key exists but does not have permission for the 'gemini-3-flash-preview' model.";
-    }
-    if (errorMsg.includes("401") || errorMsg.includes("API_KEY_INVALID")) {
-      return "[AUTH_DENIED]: Invalid API Key (401). The provided key is rejected by Google services.";
-    }
-    if (errorMsg.includes("404")) {
-      return "[TARGET_LOST]: Model not found (404). The AI architecture requested is unavailable in this region/tier.";
-    }
-    if (errorMsg.includes("429")) {
-      return "[THROTTLED]: Rate limit exceeded (429). Too many requests are hitting the uplink simultaneously.";
-    }
-    
-    return `[COMM_LINK_FAILURE]: ${errorMsg.substring(0, 150)}. System requires manual reset or key verification.`;
+    return `[COMM_FAILURE]: ${errorMsg.substring(0, 100)}. Please verify configuration.`;
   }
 };
 
@@ -87,9 +73,9 @@ export const generateTechnicalDossier = async (projectName: string) => {
       model: "gemini-3-flash-preview",
       contents: `Provide a professional overview of: ${projectName}`,
     });
-    return response.text || "Dossier retrieval failed.";
+    return response.text || "Data retrieval failed.";
   } catch (error) {
-    return "Error: System unable to synthesize project data.";
+    return "Error: Link unstable.";
   }
 };
 
@@ -98,10 +84,10 @@ export const generateTechOverview = async (techName: string) => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Explain ${techName} in 2 sentences for a robotics context.`,
+      contents: `Explain ${techName} in 2 sentences.`,
     });
-    return response.text || "Hardware description missing.";
+    return response.text || "Data unavailable.";
   } catch (error) {
-    return "Protocol error: Data link interrupted.";
+    return "Protocol error.";
   }
 };

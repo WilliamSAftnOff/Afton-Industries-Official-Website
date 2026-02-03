@@ -23,12 +23,8 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       sourcemap: true,
-      minify: 'terser',
-      terserOptions: {
-        compress: {
-          drop_console: false
-        }
-      }
+      // Using esbuild (default) instead of terser to avoid extra dependency errors
+      minify: 'esbuild'
     }
   };
 });
