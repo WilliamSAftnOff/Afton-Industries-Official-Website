@@ -13,4 +13,5 @@ jobs:
         uses: vercel/repository-dispatch@v1
         with:
           token: ${{ secrets.VERCEL_TOKEN }}
-          name: 'lint'
+          # This name MUST match exactly what you typed in the Vercel popup
+          name: 'Vercel - afton-industries-official-website: lint'
