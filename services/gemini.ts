@@ -39,7 +39,8 @@ If this is the very first message after the code, respond with something chillin
 // Helper to get Gemini response for the chat terminal
 export const getMimicResponse = async (history: Message[], forceCreatorMode: boolean = false) => {
   try {
-    // Initializing Gemini instance right before the call
+    // Initializing Gemini instance right before the call to ensure fresh configuration
+    // The API key is obtained exclusively from the environment variable process.env.API_KEY
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     // Check if the creator code exists anywhere in the user's history OR if forced by UI state
@@ -66,8 +67,8 @@ export const getMimicResponse = async (history: Message[], forceCreatorMode: boo
       },
     });
 
-    // Directly access the .text property as per guidelines
-    return response.text || "Communication error. Please try again.";
+    // Directly access the .text property from GenerateContentResponse as per guidelines
+    return response.text || "Communication error. Output buffer empty.";
   } catch (error) {
     console.error("Gemini API Error:", error);
     return "The system is currently experiencing a connection delay. Please refresh the page.";
@@ -91,6 +92,7 @@ export const generateTechnicalDossier = async (projectName: string) => {
 
     return response.text;
   } catch (error) {
+    console.error("Dossier Generation Error:", error);
     return "Overview currently unavailable.";
   }
 };
