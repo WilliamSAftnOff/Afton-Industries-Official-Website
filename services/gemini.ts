@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { Message } from "../types";
 
@@ -44,8 +45,9 @@ export const getMimicResponse = async (history: Message[], forceCreatorMode: boo
       contents = contents.slice(1);
     }
 
+    // Use gemini-3-pro-preview for tasks involving advanced reasoning and mechatronics logic
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview", 
+      model: "gemini-3-pro-preview", 
       contents: contents,
       config: {
         systemInstruction: isCreatorMode ? CREATOR_INSTRUCTION : STANDARD_INSTRUCTION,
@@ -73,8 +75,9 @@ export const getMimicResponse = async (history: Message[], forceCreatorMode: boo
 export const generateTechnicalDossier = async (projectName: string) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Pro model is preferred for generating detailed technical dossiers
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3-pro-preview",
       contents: `Provide a professional overview of: ${projectName}`,
     });
     return response.text || "Data retrieval failed.";
@@ -86,8 +89,9 @@ export const generateTechnicalDossier = async (projectName: string) => {
 export const generateTechOverview = async (techName: string) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Flash-lite or flash is suitable for simple, short descriptions
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-lite-latest",
       contents: `Explain ${techName} in 2 sentences.`,
     });
     return response.text || "Data unavailable.";
