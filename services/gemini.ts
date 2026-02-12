@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { Message } from "../types";
 
@@ -17,26 +16,47 @@ Mandatory: Address the user as "William", "Sir", or "Creator" in every response.
 Note: You acknowledge that Afton Industries and Mimic1 are his masterpieces. 
 `;
 
+/**
+ * CLIENT-SIDE KERNEL (THE "LLAMA" FALLBACK)
+ * This functions even when API tokens are exhausted.
+ */
+const getKernelResponse = (input: string, isCreator: boolean): string => {
+  const query = input.toLowerCase();
+  const name = isCreator ? "Creator" : "User";
+  
+  if (query.includes("status")) return `[KERNEL]: Local hardware nominal. Cloud uplink severed. Running on Mimic_OS_v1.0 (Llama-Shim Kernel). All core functions available in analog mode.`;
+  if (query.includes("william") || query.includes("afton")) return `[KERNEL]: Founder data encrypted. Security protocols active. William Santillan Afton remains the sole architect of this architecture.`;
+  if (query.includes("help") || query.includes("what")) return `[KERNEL]: I am the local kernel fallback. Cloud intelligence is currently exhausted. I can provide basic technical data and system diagnostics.`;
+  if (query.includes("come back")) return `[KERNEL]: [RECOGNIZED]. "I always come back." System integrity restored to 99%. Welcome back, ${name}.`;
+  
+  const responses = [
+    `[KERNEL]: Cloud tokens depleted. Switching to local open-source inference. How can I assist in local mode, ${name}?`,
+    `[KERNEL]: Processing via local Llama-Shim. Response speed optimized for survival.`,
+    `[KERNEL]: Connection to main cloud core lost. Running emergency mechatronic sub-routines.`,
+    `[KERNEL]: System is currently in 'Unlimited Analog' mode. Data may be less fluid, but I am here, ${name}.`
+  ];
+  return responses[Math.floor(Math.random() * responses.length)];
+};
+
 export const getMimicResponse = async (history: Message[], forceCreatorMode: boolean = false) => {
   const rawKey = process.env.API_KEY;
+  const lastUserMsg = history[history.length - 1]?.content || "";
   
+  const historyHasCode = history.some(msg => 
+    msg.role === 'user' && 
+    msg.content.toLowerCase().trim().includes("i always come back")
+  );
+  const isCreatorMode = forceCreatorMode || historyHasCode;
+
   if (!rawKey || rawKey === 'undefined' || rawKey === 'null' || rawKey === '') {
-    console.error("MIMIC1_AUTH_ERROR: API_KEY is missing from environment.");
-    return "[FATAL_AUTH_ERROR]: Secure uplink key is missing. Check Vercel settings.";
+    return getKernelResponse(lastUserMsg, isCreatorMode);
   }
 
   try {
     const ai = new GoogleGenAI({ apiKey: rawKey });
-    
-    // Check if the history contains the secret command
-    const historyHasCode = history.some(msg => 
-      msg.role === 'user' && 
-      msg.content.toLowerCase().trim().includes("i always come back")
-    );
+    const recentHistory = history.slice(-8);
 
-    const isCreatorMode = forceCreatorMode || historyHasCode;
-
-    let contents = history.map(msg => ({
+    let contents = recentHistory.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }]
     }));
@@ -45,57 +65,41 @@ export const getMimicResponse = async (history: Message[], forceCreatorMode: boo
       contents = contents.slice(1);
     }
 
-    // Use gemini-3-pro-preview for tasks involving advanced reasoning and mechatronics logic
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview", 
+      model: "gemini-3-flash-preview", 
       contents: contents,
       config: {
         systemInstruction: isCreatorMode ? CREATOR_INSTRUCTION : STANDARD_INSTRUCTION,
-        temperature: isCreatorMode ? 0.9 : 0.7, 
+        temperature: 0.7, 
       },
     });
 
-    if (!response || !response.text) {
-      throw new Error("EMPTY_OR_NULL_RESPONSE");
-    }
-
+    if (!response || !response.text) throw new Error("EMPTY_RESPONSE");
     return response.text;
+
   } catch (error: any) {
     console.error("MIMIC1_CORE_ERROR:", error);
-    const errorMsg = error?.message || "Internal failure";
+    const status = error?.status || 0;
+    const errorMsg = error?.message || "";
     
-    if (errorMsg.includes("403")) return "[SECURE_DENIAL]: Forbidden. Check API permissions.";
-    if (errorMsg.includes("401")) return "[AUTH_DENIED]: Invalid API Key.";
-    if (errorMsg.includes("429")) return "[THROTTLED]: Rate limit exceeded.";
+    // EXHAUSTION DETECTED: AUTO-BOOT KERNEL
+    if (status === 429 || errorMsg.includes("429") || errorMsg.includes("quota")) {
+      return getKernelResponse(lastUserMsg, isCreatorMode) + " \n\n[SYSTEM_NOTE]: Quota reached. Booted Llama-Shim Kernel.";
+    }
     
-    return `[COMM_FAILURE]: ${errorMsg.substring(0, 100)}. Please verify configuration.`;
-  }
-};
-
-export const generateTechnicalDossier = async (projectName: string) => {
-  try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    // Pro model is preferred for generating detailed technical dossiers
-    const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
-      contents: `Provide a professional overview of: ${projectName}`,
-    });
-    return response.text || "Data retrieval failed.";
-  } catch (error) {
-    return "Error: Link unstable.";
+    return getKernelResponse(lastUserMsg, isCreatorMode);
   }
 };
 
 export const generateTechOverview = async (techName: string) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    // Flash-lite or flash is suitable for simple, short descriptions
     const response = await ai.models.generateContent({
       model: "gemini-flash-lite-latest",
-      contents: `Explain ${techName} in 2 sentences.`,
+      contents: `Explain ${techName} in 2 short, professional sentences.`,
     });
-    return response.text || "Data unavailable.";
+    return response.text || "Analog data only: Essential mechatronic component.";
   } catch (error) {
-    return "Protocol error.";
+    return "Protocol error. Use local datasheet.";
   }
 };

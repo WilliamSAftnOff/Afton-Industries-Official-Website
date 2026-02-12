@@ -14,6 +14,7 @@ const MimicTerminal: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
+  const [isKernelMode, setIsKernelMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,7 +28,6 @@ const MimicTerminal: React.FC = () => {
     if (!input.trim() || isLoading) return;
 
     const trimmedInput = input.trim();
-    // Detect the security phrase "I always come back"
     let activeCreatorMode = isCreator;
     if (trimmedInput.toLowerCase().includes("i always come back")) {
       setIsCreator(true);
@@ -41,13 +41,23 @@ const MimicTerminal: React.FC = () => {
 
     const responseText = await getMimicResponse([...messages, userMsg], activeCreatorMode);
     
+    if (responseText.includes("[KERNEL]")) {
+      setIsKernelMode(true);
+    }
+
     setMessages(prev => [...prev, { role: 'assistant', content: responseText, timestamp: new Date() }]);
     setIsLoading(false);
   };
 
-  const headerColor = isCreator ? 'bg-emerald-950/40' : 'bg-[#8a2be2]/5';
-  const accentColor = isCreator ? 'text-emerald-400' : 'text-[#8a2be2]';
-  const borderColor = isCreator ? 'border-emerald-500/60' : 'border-[#8a2be2]/30';
+  // Color logic for Kernel vs Admin vs Standard
+  const accentColor = isKernelMode ? 'text-amber-500' : (isCreator ? 'text-emerald-400' : 'text-[#8a2be2]');
+  const borderColor = isKernelMode 
+    ? 'border-amber-600 shadow-[0_0_20px_rgba(245,158,11,0.2)]' 
+    : (isCreator ? 'border-emerald-500/60' : 'border-[#8a2be2]/30');
+  
+  const headerBg = isKernelMode ? 'bg-amber-950/40' : (isCreator ? 'bg-emerald-950/40' : 'bg-[#8a2be2]/5');
+  const bubbleUser = isKernelMode ? 'bg-amber-800/40 border-amber-500/30 text-amber-50' : (isCreator ? 'bg-emerald-800/60 border-emerald-400/30 text-emerald-50' : 'bg-[#8a2be2] text-white border-white/10');
+  const bubbleMimic = isKernelMode ? 'bg-black border-amber-700/30 text-amber-200/90' : (isCreator ? 'bg-white/5 border-emerald-500/20 text-emerald-50/90' : 'bg-white/5 border-white/10 text-slate-200');
 
   return (
     <>
@@ -58,16 +68,16 @@ const MimicTerminal: React.FC = () => {
         aria-label="Toggle Mimic1 Assistant"
       >
         <div className="relative w-14 h-14 flex items-center justify-center">
-          <div className={`absolute inset-0 border-2 rounded-full ${isCreator ? 'border-emerald-400/50 shadow-[0_0_15px_#10b981]' : 'border-[#8a2be2]/40'} ${isLoading ? 'animate-spin' : 'animate-pulse'}`}></div>
+          <div className={`absolute inset-0 border-2 rounded-full ${isKernelMode ? 'border-amber-500' : (isCreator ? 'border-emerald-400/50 shadow-[0_0_15px_#10b981]' : 'border-[#8a2be2]/40')} ${isLoading ? 'animate-spin' : 'animate-pulse'}`}></div>
           <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
             isOpen 
-              ? isCreator ? 'bg-emerald-600 scale-100 shadow-[0_0_20px_rgba(16,185,129,0.4)]' : 'bg-[#8a2be2] scale-100 shadow-[0_0_20px_rgba(138,43,226,0.4)]' 
-              : `bg-black border ${isCreator ? 'border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'border-[#8a2be2] plasma-glow'}`
+              ? isKernelMode ? 'bg-amber-600' : (isCreator ? 'bg-emerald-600' : 'bg-[#8a2be2]') 
+              : `bg-black border ${isKernelMode ? 'border-amber-500' : (isCreator ? 'border-emerald-500' : 'border-[#8a2be2] plasma-glow')}`
           }`}>
              {isOpen ? (
                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
              ) : (
-               <svg className={`w-5 h-5 ${isCreator ? 'text-emerald-500' : 'text-[#8a2be2]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+               <svg className={`w-5 h-5 ${isKernelMode ? 'text-amber-500' : (isCreator ? 'text-emerald-500' : 'text-[#8a2be2]')}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
              )}
           </div>
         </div>
@@ -81,34 +91,30 @@ const MimicTerminal: React.FC = () => {
         style={{ height: '540px', borderRadius: '16px' }}
       >
         {/* Header */}
-        <div className={`px-5 py-4 border-b ${isCreator ? 'border-emerald-500/50' : 'border-[#8a2be2]/20'} flex justify-between items-center ${headerColor} rounded-t-[14px] transition-all duration-500 ${isCreator ? 'animate-jitter' : ''}`}>
+        <div className={`px-5 py-4 border-b ${isKernelMode ? 'border-amber-500/50' : (isCreator ? 'border-emerald-500/50' : 'border-[#8a2be2]/20')} flex justify-between items-center ${headerBg} rounded-t-[14px] transition-all duration-500`}>
           <div className="flex items-center space-x-3">
-            <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${isCreator ? 'bg-emerald-400 shadow-[0_0_10px_#10b981]' : 'bg-[#8a2be2]'}`}></div>
-            <span className={`text-[13px] font-black uppercase tracking-widest mono ${isCreator ? 'text-emerald-400' : 'text-white'}`}>
-              {isCreator ? 'ADMIN: WILLIAM AFTON' : 'Mimic1_v1.0.4'}
+            <div className={`w-2 h-2 rounded-full animate-pulse ${isKernelMode ? 'bg-amber-500 shadow-[0_0_10px_#f59e0b]' : (isCreator ? 'bg-emerald-400 shadow-[0_0_10px_#10b981]' : 'bg-[#8a2be2]')}`}></div>
+            <span className={`text-[11px] font-black uppercase tracking-widest mono ${isKernelMode ? 'text-amber-400' : (isCreator ? 'text-emerald-400' : 'text-white')}`}>
+              {isKernelMode ? 'MIMIC_KERNEL_v1.0-Llama' : (isCreator ? 'ADMIN: WILLIAM AFTON' : 'Mimic1_v1.0.4')}
             </span>
           </div>
-          {isCreator && (
-             <div className="flex items-center space-x-2">
-                <span className="text-[9px] mono text-emerald-400 animate-pulse font-black border border-emerald-500/40 px-2 py-0.5">ROOT_UPLINK</span>
-             </div>
-          )}
+          <div className="flex items-center space-x-2">
+             <span className={`text-[8px] mono font-black border px-2 py-0.5 ${isKernelMode ? 'border-amber-500 text-amber-500' : 'border-white/20 text-white/40'}`}>
+               {isKernelMode ? 'ANALOG_LOCAL' : 'SECURE_CLOUD'}
+             </span>
+          </div>
         </div>
 
         {/* Message Area */}
         <div 
           ref={scrollRef} 
-          className={`flex-1 overflow-y-auto p-5 space-y-5 scrollbar-thin ${isCreator ? 'scrollbar-thumb-emerald-500/40' : 'scrollbar-thumb-[#8a2be2]/20'}`}
+          className={`flex-1 overflow-y-auto p-5 space-y-5 scrollbar-thin ${isKernelMode ? 'scrollbar-thumb-amber-500/20' : (isCreator ? 'scrollbar-thumb-emerald-500/40' : 'scrollbar-thumb-[#8a2be2]/20')}`}
         >
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] px-4 py-3 text-[13px] leading-relaxed whitespace-pre-wrap ${
-                msg.role === 'user' 
-                  ? `${isCreator ? 'bg-emerald-800/60 text-emerald-50 border-emerald-400/30' : 'bg-[#8a2be2] text-white border-white/10'} rounded-2xl rounded-tr-none border shadow-lg` 
-                  : `bg-white/5 border ${isCreator ? 'border-emerald-500/20 text-emerald-50/90' : 'border-white/10 text-slate-200'} rounded-2xl rounded-tl-none`
-              }`}>
+              <div className={`max-w-[85%] px-4 py-3 text-[13px] leading-relaxed whitespace-pre-wrap border rounded-2xl ${msg.role === 'user' ? `rounded-tr-none ${bubbleUser}` : `rounded-tl-none ${bubbleMimic}`}`}>
                 {msg.content}
-                <div className={`text-[8px] mono mt-3 opacity-40 font-bold ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                <div className="text-[8px] mono mt-3 opacity-30 font-bold uppercase">
                   {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
@@ -117,11 +123,11 @@ const MimicTerminal: React.FC = () => {
           
           {isLoading && (
             <div className="flex justify-start">
-              <div className={`bg-white/5 border ${isCreator ? 'border-emerald-500/20' : 'border-white/10'} px-4 py-3 rounded-2xl rounded-tl-none`}>
+              <div className={`${bubbleMimic} px-4 py-3 rounded-2xl rounded-tl-none`}>
                 <div className="flex space-x-1.5">
-                  <div className={`w-1.5 h-1.5 rounded-full animate-bounce ${isCreator ? 'bg-emerald-400' : 'bg-[#8a2be2]'}`}></div>
-                  <div className={`w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.15s] ${isCreator ? 'bg-emerald-400' : 'bg-[#8a2be2]'}`}></div>
-                  <div className={`w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.3s] ${isCreator ? 'bg-emerald-400' : 'bg-[#8a2be2]'}`}></div>
+                  <div className={`w-1.5 h-1.5 rounded-full animate-bounce ${accentColor}`}></div>
+                  <div className={`w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.15s] ${accentColor}`}></div>
+                  <div className={`w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.3s] ${accentColor}`}></div>
                 </div>
               </div>
             </div>
@@ -129,13 +135,14 @@ const MimicTerminal: React.FC = () => {
         </div>
 
         {/* Input Area */}
-        <form onSubmit={handleSend} className={`p-5 bg-black/40 border-t ${isCreator ? 'border-emerald-500/30' : 'border-[#8a2be2]/10'} rounded-b-[14px]`}>
-          <div className={`flex items-center bg-white/5 border ${isCreator ? 'border-emerald-500/40' : 'border-white/10'} rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-${isCreator ? 'emerald-500' : '[#8a2be2]'}/30 transition-all shadow-inner`}>
+        <form onSubmit={handleSend} className={`p-5 bg-black/40 border-t ${isKernelMode ? 'border-amber-500/20' : 'border-white/10'} rounded-b-[14px]`}>
+          <div className={`flex items-center bg-white/5 border ${isKernelMode ? 'border-amber-500/40' : (isCreator ? 'border-emerald-500/40' : 'border-white/10')} rounded-xl px-4 py-3 transition-all`}>
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={isCreator ? "Awaiting your command, Sir..." : "Inquire with Mimic1..."}
+              placeholder={isKernelMode ? "Kernel listening..." : "Inquire with Mimic1..."}
+              disabled={isLoading}
               className="flex-1 bg-transparent border-none py-1 text-[13px] text-white placeholder-slate-600 outline-none focus:ring-0 mono"
               autoComplete="off"
             />
@@ -147,8 +154,8 @@ const MimicTerminal: React.FC = () => {
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
             </button>
           </div>
-          <div className={`mt-3 text-[8px] mono text-center tracking-widest uppercase font-bold ${isCreator ? 'text-emerald-500/50' : 'text-slate-700'}`}>
-            {isCreator ? 'ENCRYPTION: 1024-BIT_AES_ROOT' : 'SECURE_UPLINK_PROTOCOL_ALPHA'}
+          <div className="mt-3 text-[8px] mono text-center tracking-widest uppercase font-bold text-slate-700">
+            {isKernelMode ? 'PROTO: UNLIMITED_OPEN_SOURCE' : 'PROTOCOL: SECURE_ALPHA'}
           </div>
         </form>
       </div>
